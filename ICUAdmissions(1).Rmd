@@ -1,0 +1,1949 @@
+---
+title: "ICUAdmissionsFinal"
+author: "Glenne Grossman, Viorica Lefter, Robyn Munro, Karishini Ramamoorthi, Elizabeth Warnick"
+date: "`r format(Sys.time(), '%d %B %Y')`"
+output:
+  html_document: 
+    number_sections: TRUE
+    code_folding: hide
+    toc: yes
+    toc_float: 
+      toc_collapsed: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(Rcmdr)
+library(car)
+library(RcmdrMisc)
+library (ggplot2)
+library (sjPlot)
+library (multcomp)
+library (multcompView)
+library (DescTools)
+library (tidyr)
+library(rsample, pos=21)
+library(sjstats)
+library(ggplot2, pos=18)
+library(sjPlot, pos=19)
+library(randomForest, pos=20)
+library(tidyr, pos=21)
+library(rsample, pos=21)
+library(DT, pos=23)
+library(dplyr)
+library(jtools)
+
+library(magrittr)
+library(RcmdrMisc)
+library(Rcmdr)
+library(kableExtra)
+library(sjlabelled)
+library(sjmisc)
+library(devtools)
+devtools::install_github("strengejacke/strengejacke")
+library(strengejacke)
+library(sjPlot)
+library(sjstats, pos=22)
+library(ggplot2)
+library(qwraps2)
+library(gplots)
+library(data.table)
+library(tidyverse)
+library(kableExtra)
+library(ggthemes)
+library(sjPlot)
+library(sjlabelled)
+library(sjmisc)
+library(ggplot2)
+library(Rcmdr)
+library(car)
+library(RcmdrMisc)
+library (ggplot2)
+library (sjPlot)
+library (multcomp)
+library (multcompView)
+library (DescTools)
+library (tidyr)
+library (plotly)
+
+
+icu <- read.table("icu_factored.csv", header=TRUE, sep=",", na.strings="NA", dec=".", strip.white=TRUE)
+
+icu <- within(icu, {
+  Consciousness <- 
+  factor(Consciousness, 
+  labels=c('Conscious',
+  'Unconscious', 'Unconscious'))
+})
+```
+
+#Executive Summary
+
+#Introduction
+
+#Methodology
+
+#Analysis
+##Introduction to the Dataset
+###Demographics
+<center><h3><b>Analysis of Atributed</b></h3></center>
+
+<h4><b> DEMOGRAPHICS </b></h4>
+The demographic variables of the participants in this study include age, sex, and race.
+
+<b> Sex </b>
+```{r message=FALSE, warning=FALSE, error=FALSE }
+mytable <- table(icu$Sex)
+lbls <- paste(names(mytable), "\n", mytable, sep="")
+pie(mytable, labels = lbls, 
+   main="Pie Chart of Distribution by Sex")
+```
+
+
+<b> Race </b>
+```{r message=FALSE, warning=FALSE, error=FALSE }
+mytable1 <- table(icu$Race)
+lbls <- paste(names(mytable1), "\n", mytable1, sep="")
+pie(mytable1, labels = lbls, 
+   main="Pie Chart of Distribution by Race")
+```
+
+<b> Age </b>
+```{r message=FALSE, warning=FALSE, error=FALSE }
+# Change line color and fill color
+ggplot(icu, aes(x=Age))+
+  geom_density(color="darkblue", fill="lightblue")+
+  labs(title = "Distribution of Age")+
+  xlab("Density") + ylab("Systolic Blood Pressure (Years)")
+```
+
+```{r message=FALSE, warning=FALSE, error=FALSE }
+labs <- c(paste(seq(0, 95, by = 5), seq(0 + 5 - 1, 100 - 1, by = 5),
+                sep = "-"), paste(100, "+", sep = ""))
+icu$AgeGroup <- cut(icu$Age, breaks = c(seq(0, 100, by = 5), Inf), labels = labs, right = FALSE)
+head(icu[c("Age", "AgeGroup")], 15)
+
+SurT<-table(icu$Status)
+SurT
+prop.table(SurT)
+round(100*prop.table(SurT),digits=0)
+cross<-table(icu$Status,icu$AgeGroup)
+round(prop.table(cross,2)*100,digits=0)
+barplot(prop.table(cross,2)*100,
+xlab='Age',ylab='Percentages',main="Percentage survival by
+Age",col=c("lightblue","lightcyan"),
+legend=rownames(cross), args.legend = list(x = "topright"))
+```
+
+
+
+<b> DEMOGRAPHIC VARIABLES CONCLUSION </b>
+<br>
+Based on analysis of the demographics of the participants in the study, it can be concluded that a majority of participants are male, and white. In addition, majority of the participants in the study are above the age of 50 with a smaller population less than 25. This indicates that there isn't a normal distribution of for the participants in this study because there are two distinct populations in the distribution.
+<br>
+In addition, the graph above that shows the percentage survival by age shows that in all age categories except 90-94 there are more participants that lived than died, and that in general younger participants were more likely to live compared to older participants.
+
+###Admissions
+<h4><b> ADMISSIONS </b></h4>
+
+<b> Previous </b>
+```{r message=FALSE, warning=FALSE, error=FALSE }
+mytable1 <- table(icu$Previous)
+lbls <- paste(names(mytable1), "\n", mytable1, sep="")
+pie(mytable1, labels = lbls, 
+   main="Pie Chart of Distribution by Previous Admission into the ICU Within 6 Months")
+```
+
+
+<b> Type </b>
+```{r message=FALSE, warning=FALSE, error=FALSE }
+mytable1 <- table(icu$Type)
+lbls <- paste(names(mytable1), "\n", mytable1, sep="")
+pie(mytable1, labels = lbls, 
+   main="Pie Chart of Distribution by Type of Admission")
+```
+
+<b> Service </b>
+```{r message=FALSE, warning=FALSE, error=FALSE }
+mytable1 <- table(icu$Service)
+lbls <- paste(names(mytable1), "\n", mytable1, sep="")
+pie(mytable1, labels = lbls, 
+   main="Pie Chart of Distribution by Type of Service")
+```
+
+<b> ADMISSIONS VARIABLES CONCLUSION </b>
+<br>
+Analysis of the graphs above indicate that a majority of participants had not been admitted into the ICU in the last 6 months and that the majority of the admissions were emergency admissions. In addition a majority of the type of service provided to participants were surgical, though the difference was not substantial (107 vs 93)
+
+
+
+
+###Clinical
+
+<h4><b> CLINICAL </b></h4>
+<br>
+<b> Heart Rate </b>
+```{r message=FALSE, warning=FALSE, error=FALSE }
+# Change line color and fill color
+ggplot(icu, aes(x=HeartRate))+
+  geom_density(color="darkblue", fill="lightblue")+
+  labs(title = "Distribution of Heart Rate")+
+  ylab("Density") + xlab("Heart Rate (Beats per minute)")
+```
+The graph above shows that heart rates of participants in this study is not normally distributed and skewed towards the 75. However, considering that the average normal resting heart rate of individuals is between 60 and 100 beats per minute, this can be justified and this indicates that a majority of the sample had normal resting heart rates. 
+
+<b> Systolic Blood Pressure </b>
+```{r message=FALSE, warning=FALSE, error=FALSE }
+# Change line color and fill color
+ggplot(icu, aes(x=Systolic))+
+  geom_density(color="darkblue", fill="lightblue")+
+  labs(title = "Distribution of Systolic Blood Pressure")+
+  ylab("Density") + xlab("Systolic Blood Pressure (mmHg)")
+```
+The graph above shows that a majority of participants had a systolic blood pressure around 127 mm Hg. Considering that the normal systolic blood pressure is 12 mm Hg, this indicates that a large portion of the sample had systolic blood pressures above the normal level. 
+<br>
+
+<b> Cancer </b>
+```{r message=FALSE, warning=FALSE, error=FALSE }
+mytable1 <- table(icu$Cancer)
+lbls <- paste(names(mytable1), "\n", mytable1, sep="")
+pie(mytable1, labels = lbls, 
+   main="Pie Chart of Distribution by Cancer Involvement")
+```
+<b> Renal Failure </b>
+```{r message=FALSE, warning=FALSE, error=FALSE }
+mytable1 <- table(icu$Renal)
+lbls <- paste(names(mytable1), "\n", mytable1, sep="")
+pie(mytable1, labels = lbls, 
+   main="Pie Chart of Distribution by Renal Failure")
+```
+
+<b> Infection </b>
+```{r message=FALSE, warning=FALSE, error=FALSE }
+mytable1 <- table(icu$Infection)
+lbls <- paste(names(mytable1), "\n", mytable1, sep="")
+pie(mytable1, labels = lbls, 
+   main="Pie Chart of Distribution by Infection Involvement")
+```
+
+<b> CPR </b>
+```{r message=FALSE, warning=FALSE, error=FALSE }
+mytable1 <- table(icu$CPR)
+lbls <- paste(names(mytable1), "\n", mytable1, sep="")
+pie(mytable1, labels = lbls, 
+   main="Pie Chart of Distribution by CPR")
+```
+
+<b> Fracture </b>
+```{r message=FALSE, warning=FALSE, error=FALSE }
+mytable1 <- table(icu$Fracture)
+lbls <- paste(names(mytable1), "\n", mytable1, sep="")
+pie(mytable1, labels = lbls, 
+   main="Pie Chart of Distribution by Fracture")
+```
+
+<b> PO2 </b>
+```{r message=FALSE, warning=FALSE, error=FALSE }
+mytable1 <- table(icu$PO2)
+lbls <- paste(names(mytable1), "\n", mytable1, sep="")
+pie(mytable1, labels = lbls, 
+   main="Pie Chart of Distribution by PO2")
+```
+
+<b> PH </b>
+```{r message=FALSE, warning=FALSE, error=FALSE }
+mytable1 <- table(icu$PH)
+lbls <- paste(names(mytable1), "\n", mytable1, sep="")
+pie(mytable1, labels = lbls, 
+   main="Pie Chart of Distribution by PH")
+```
+
+<b> PCO2 </b>
+```{r message=FALSE, warning=FALSE, error=FALSE }
+mytable1 <- table(icu$PCO2)
+lbls <- paste(names(mytable1), "\n", mytable1, sep="")
+pie(mytable1, labels = lbls, 
+   main="Pie Chart of Distribution by PCO2")
+```
+
+<b> Bicarbonate </b>
+```{r message=FALSE, warning=FALSE, error=FALSE }
+mytable1 <- table(icu$Bicarbonate)
+lbls <- paste(names(mytable1), "\n", mytable1, sep="")
+pie(mytable1, labels = lbls, 
+   main="Pie Chart of Distribution by Bicarbonate")
+```
+
+<b> Creatinine </b>
+```{r message=FALSE, warning=FALSE, error=FALSE }
+mytable1 <- table(icu$Creatinine)
+lbls <- paste(names(mytable1), "\n", mytable1, sep="")
+pie(mytable1, labels = lbls, 
+   main="Pie Chart of Distribution by Creatinine")
+```
+
+<b> Consciousness </b>
+```{r message=FALSE, warning=FALSE, error=FALSE }
+mytable1 <- table(icu$Consciousness)
+lbls <- paste(names(mytable1), "\n", mytable1, sep="")
+pie(mytable1, labels = lbls, 
+   main="Pie Chart of Distribution by Consciousness")
+```
+
+<b> CLINICAL VARIABLES CONCLUSION </b>
+
+From the graphs above the following conclusions can be made:
+- A majority of the participants in the study do not have cancer involved
+- A majority of the participants in the study do not have renal failure
+- A majority of the participants in the study do not have infection involved
+- A majority of the participants in the study did not have CPR prior to admission
+- A majority of the participants in the study did not have a fractred bone
+- A majority of the participants in the study did not have partial oxygen levels from blood gases under 60.
+- A majority of the participants in the study did not have a pH from blood gas under 7.25. Normal blood pH levels is 7.38. This indicates that a majority of participants did not have acidic blood but this does not suggest that participants did not have alkaline blood.
+- A majority of the participants in the study did not have partial carbon dioxide levels from blood gas over 45. Normal CO2 levels in the blood are 38-42 mmHg therefore, this indicates that participants did not have dangerous CO2 levels in thier blood.
+- A majority of participants in the study did not have bicarbonate from blood gas under 18. Normal bicarbonate levels are 22 mEq/L. Therefore, the results indicate that a majority of participants did not have dangerously low levels of bicarbonate but could have had higher than normal levels.
+- A majority of participants in the study did not have a creatinine from blood gas over 2.0 mg/dL. Normal creatinine levels in the blood are between 0.6 - 1.2 mg/dL. Therefore participants did not have abnormally high levels of creatinine in thier blood. 
+- A majority of participants in the study were not in a coma or deep stupor, but there were more coma participants than those in a deep stupor
+
+##Uniformity
+
+<b>Uniformity of variables </b>
+<br>
+Status
+<br>
+
+H0: There is no statistically significant difference between the two status groups and therefore, the groups are uniformly distributed. P-value > 0.05
+
+Ha: The two status groups are not uniformly distributed. P-value <0.05.
+```{r echo=FALSE}
+ggplot(data.frame(icu), aes(x=icu$Status)) +
+geom_bar(fill="cadetblue2")+
+labs(x = "Status", y= "Frequency")
+```
+
+```{r echo=FALSE}
+local({
+  .Table <- with(icu, table(Status))
+  cat("\ncounts:\n")
+  print(.Table)
+  cat("\npercentages:\n")
+  print(round(100*.Table/sum(.Table),2))
+  .Probability <- c(0.5,0.5)
+  chisq.test(.Table, p=.Probability)
+})
+```
+
+Sex
+<br>
+
+H0: There is no statistically significant difference between males and females and therefore, the groups are uniformly distributed. P-value > 0.05
+
+Ha: Sex is not uniformly distributed. P-value <0.05.
+```{r echo=FALSE}
+ggplot(data.frame(icu), aes(x=icu$Sex)) +
+geom_bar(fill="cadetblue2")+
+labs(x = "Sex", y= "Frequency")
+```
+
+
+```{r echo=FALSE}
+local({
+  .Table <- with(icu, table(Sex))
+  cat("\ncounts:\n")
+  print(.Table)
+  cat("\npercentages:\n")
+  print(round(100*.Table/sum(.Table),2))
+  .Probability <- c(0.5,0.5)
+  chisq.test(.Table, p=.Probability)
+})
+```
+
+Race
+<br>
+
+H0: There is no statistically significant difference between the three races in the study, therefore, the groups are uniformly distributed. P-value > 0.05
+
+Ha: Race is not uniformly distributed. P-value <0.05.
+```{r echo=FALSE}
+ggplot(data.frame(icu), aes(x=icu$Race)) +
+geom_bar(fill="cadetblue2")+
+labs(x = "Race", y= "Frequency")
+```
+
+
+```{r echo=FALSE}
+local({
+  .Table <- with(icu, table(Race))
+  cat("\ncounts:\n")
+  print(.Table)
+  cat("\npercentages:\n")
+  print(round(100*.Table/sum(.Table),2))
+  .Probability <- c(0.3333333333,0.3333333333,0.3333333333)
+  chisq.test(.Table, p=.Probability)
+})
+```
+
+
+Service
+<br>
+
+H0: There is no statistically significant difference between medical and surgical types of service and therefore, the groups are uniformly distributed. P-value > 0.05
+
+Ha: Service is not uniformly distributed. P-value <0.05.
+```{r echo=FALSE}
+ggplot(data.frame(icu), aes(x=icu$Service)) +
+geom_bar(fill="cadetblue2")+
+labs(x = "Service", y= "Frequency")
+```
+
+
+```{r echo=FALSE}
+local({
+  .Table <- with(icu, table(Service))
+  cat("\ncounts:\n")
+  print(.Table)
+  cat("\npercentages:\n")
+  print(round(100*.Table/sum(.Table),2))
+  .Probability <- c(0.5,0.5)
+  chisq.test(.Table, p=.Probability)
+})
+```
+
+
+Cancer
+<br>
+
+H0: There is no statistically significant difference between participants with cancer involvement and those without and therefore, the groups are uniformly distributed. P-value > 0.05
+
+Ha: Cancer is not uniformly distributed. P-value <0.05.
+```{r echo=FALSE}
+ggplot(data.frame(icu), aes(x=icu$Cancer)) +
+geom_bar(fill="cadetblue2")+
+labs(x = "Cancer", y= "Frequency")
+```
+
+
+```{r echo=FALSE}
+local({
+  .Table <- with(icu, table(Cancer))
+  cat("\ncounts:\n")
+  print(.Table)
+  cat("\npercentages:\n")
+  print(round(100*.Table/sum(.Table),2))
+  .Probability <- c(0.5,0.5)
+  chisq.test(.Table, p=.Probability)
+})
+```
+
+
+Renal
+<br>
+
+H0: There is no statistically significant difference between the renal failure and no renal failure groups and therefore, the groups are uniformly distributed. P-value > 0.05
+
+Ha: Renal is not uniformly distributed. P-value <0.05.
+```{r echo=FALSE}
+ggplot(data.frame(icu), aes(x=icu$Renal)) +
+geom_bar(fill="cadetblue2")+
+labs(x = "Renal", y= "Frequency")
+```
+
+
+```{r echo=FALSE}
+local({
+  .Table <- with(icu, table(Renal))
+  cat("\ncounts:\n")
+  print(.Table)
+  cat("\npercentages:\n")
+  print(round(100*.Table/sum(.Table),2))
+  .Probability <- c(0.5,0.5)
+  chisq.test(.Table, p=.Probability)
+})
+```
+
+
+Infection
+<br>
+
+H0: There is no statistically significant difference between the infection involved and no infection involved groups, therefore, the groups are uniformly distributed. P-value > 0.05
+
+Ha: Infection is not uniformly distributed. P-value <0.05.
+```{r echo=FALSE}
+ggplot(data.frame(icu), aes(x=icu$Infection)) +
+geom_bar(fill="cadetblue2")+
+labs(x = "Infection", y= "Frequency")
+```
+
+
+```{r echo=FALSE}
+local({
+  .Table <- with(icu, table(Infection))
+  cat("\ncounts:\n")
+  print(.Table)
+  cat("\npercentages:\n")
+  print(round(100*.Table/sum(.Table),2))
+  .Probability <- c(0.5,0.5)
+  chisq.test(.Table, p=.Probability)
+})
+```
+
+
+CPR
+<br>
+
+H0: There is no statistically significant difference between CPR before admission and no CPR before admission groups, therefore, the groups are uniformly distributed. P-value > 0.05
+
+Ha: CPR is not uniformly distributed. P-value <0.05.
+```{r echo=FALSE}
+ggplot(data.frame(icu), aes(x=icu$CPR)) +
+geom_bar(fill="cadetblue2")+
+labs(x = "CPR", y= "Frequency")
+```
+
+
+```{r echo=FALSE}
+local({
+  .Table <- with(icu, table(CPR))
+  cat("\ncounts:\n")
+  print(.Table)
+  cat("\npercentages:\n")
+  print(round(100*.Table/sum(.Table),2))
+  .Probability <- c(0.5,0.5)
+  chisq.test(.Table, p=.Probability)
+})
+```
+
+
+Type
+<br>
+
+H0: There is no statistically significant difference between elective and emergency groups and therefore, the groups are uniformly distributed. P-value > 0.05
+
+Ha: Type is not uniformly distributed. P-value <0.05.
+```{r echo=FALSE}
+ggplot(data.frame(icu), aes(x=icu$Type)) +
+geom_bar(fill="cadetblue2")+
+labs(x = "Type", y= "Frequency")
+```
+
+
+```{r echo=FALSE}
+local({
+  .Table <- with(icu, table(Type))
+  cat("\ncounts:\n")
+  print(.Table)
+  cat("\npercentages:\n")
+  print(round(100*.Table/sum(.Table),2))
+  .Probability <- c(0.5,0.5)
+  chisq.test(.Table, p=.Probability)
+})
+```
+
+
+Fracture
+<br>
+
+H0: There is no statistically significant difference between participants with a fractured bone and those without. Therefore, the groups are uniformly distributed. P-value > 0.05
+
+Ha: Fracture is not uniformly distributed. P-value <0.05.
+```{r echo=FALSE}
+ggplot(data.frame(icu), aes(x=icu$Fracture)) +
+geom_bar(fill="cadetblue2")+
+labs(x = "Fracture", y= "Frequency")
+```
+
+
+```{r echo=FALSE}
+local({
+  .Table <- with(icu, table(Fracture))
+  cat("\ncounts:\n")
+  print(.Table)
+  cat("\npercentages:\n")
+  print(round(100*.Table/sum(.Table),2))
+  .Probability <- c(0.5,0.5)
+  chisq.test(.Table, p=.Probability)
+})
+```
+
+PO2
+<br>
+
+H0: There is no statistically significant difference between participants with PO2 levels below 60 and those without. Therefore, the groups are uniformly distributed. P-value > 0.05
+
+Ha: PO2 is not uniformly distributed. P-value <0.05.
+```{r echo=FALSE}
+ggplot(data.frame(icu), aes(x=icu$PO2)) +
+geom_bar(fill="cadetblue2")+
+labs(x = "PO2", y= "Frequency")
+```
+
+
+```{r echo=FALSE}
+local({
+  .Table <- with(icu, table(PO2))
+  cat("\ncounts:\n")
+  print(.Table)
+  cat("\npercentages:\n")
+  print(round(100*.Table/sum(.Table),2))
+  .Probability <- c(0.5,0.5)
+  chisq.test(.Table, p=.Probability)
+})
+```
+
+
+PH
+<br>
+
+H0: There is no statistically significant difference between pH under 7.25 and the group without. Therefore, the groups are uniformly distributed. P-value > 0.05
+
+Ha: PH is not uniformly distributed. P-value <0.05.
+```{r echo=FALSE}
+ggplot(data.frame(icu), aes(x=icu$PH)) +
+geom_bar(fill="cadetblue2")+
+labs(x = "PH", y= "Frequency")
+```
+
+
+```{r echo=FALSE}
+local({
+  .Table <- with(icu, table(PH))
+  cat("\ncounts:\n")
+  print(.Table)
+  cat("\npercentages:\n")
+  print(round(100*.Table/sum(.Table),2))
+  .Probability <- c(0.5,0.5)
+  chisq.test(.Table, p=.Probability)
+})
+```
+
+
+Cancer
+<br>
+
+H0: There is no statistically significant difference between the cancer involved and no cancer involved groups. Therefore, the groups are uniformly distributed. P-value > 0.05
+
+Ha: Cancer is not uniformly distributed. P-value <0.05.
+```{r echo=FALSE}
+ggplot(data.frame(icu), aes(x=icu$Bicarbonate)) +
+geom_bar(fill="cadetblue2")+
+labs(x = "Cancer", y= "Frequency")
+```
+
+
+```{r echo=FALSE}
+local({
+  .Table <- with(icu, table(Bicarbonate))
+  cat("\ncounts:\n")
+  print(.Table)
+  cat("\npercentages:\n")
+  print(round(100*.Table/sum(.Table),2))
+  .Probability <- c(0.5,0.5)
+  chisq.test(.Table, p=.Probability)
+})
+```
+
+Creatinine
+<br>
+
+H0: There is no statistically significant difference between the creatinine over 2.0 group and those without. Therefore, the groups are uniformly distributed. P-value > 0.05
+
+Ha: Creatinine is not uniformly distributed. P-value <0.05.
+```{r echo=FALSE}
+ggplot(data.frame(icu), aes(x=icu$Creatinine)) +
+geom_bar(fill="cadetblue2")+
+labs(x = "Creatinine", y= "Frequency")
+```
+
+
+```{r echo=FALSE}
+local({
+  .Table <- with(icu, table(Creatinine))
+  cat("\ncounts:\n")
+  print(.Table)
+  cat("\npercentages:\n")
+  print(round(100*.Table/sum(.Table),2))
+  .Probability <- c(0.5,0.5)
+  chisq.test(.Table, p=.Probability)
+})
+```
+
+Consciousness
+<br>
+
+H0: There is no statistically significant difference between the three consciouss groups. Therefore, the groups are uniformly distributed. P-value > 0.05
+
+Ha: Consciousness is not uniformly distributed. P-value <0.05.
+```{r echo=FALSE}
+ggplot(data.frame(icu), aes(x=icu$Consciousness)) +
+geom_bar(fill="cadetblue2")+
+labs(x = "Consciousness", y= "Frequency")
+```
+
+
+```{r echo=FALSE}
+local({
+  .Table <- with(icu, table(Consciousness))
+  cat("\ncounts:\n")
+  print(.Table)
+  cat("\npercentages:\n")
+  print(round(100*.Table/sum(.Table),2))
+  .Probability <- c(0.3333333333,0.3333333333,0.3333333333)
+  chisq.test(.Table, p=.Probability)
+})
+```
+
+
+PCO2
+<br>
+
+H0: There is no statistically significant difference between the two PCO2 groups. Therefore they are uniformly distributed. P-value > 0.05
+
+Ha: PCO2 is not uniformly distributed. P-value <0.05.
+```{r echo=FALSE}
+library (ggplot2)
+ggplot(data.frame(icu), aes(x=icu$PCO2)) +
+geom_bar(fill="cadetblue2")+
+labs(x = "PCO2", y= "Frequency")
+```
+
+
+```{r echo=FALSE}
+local({
+  .Table <- with(icu, table(PCO2))
+  cat("\ncounts:\n")
+  print(.Table)
+  cat("\npercentages:\n")
+  print(round(100*.Table/sum(.Table),2))
+  .Probability <- c(0.5,0.5)
+  chisq.test(.Table, p=.Probability)
+})
+```
+
+<p align="justify">
+<b> UNFORMITY CONCLUSION </b>
+Based on the graphs and resuts for the chi-squared tests above, the P-Values of all variables are less than 0.05 which means that the null hypotheses can be rejected. This indicates that the variable are not uniformly distirbuted The exception to this is the variable service which has a P-Value greater than 0.05 which indicates that the null hypothesis cannot be rejected. Based on this we can conclude that the variable service is uniformly distributed.
+</p>
+
+
+
+## Normality Tests
+<center><h3><b>Normality Testing</b></h3></center>
+
+<style>
+table, th, td {
+  border: 1px solid black;
+  border-collapse: collapse;
+}
+th, td {
+  padding: 5px;
+  vertical-align:top;
+}
+th {
+  text-align: left;
+}
+</style>
+<b> Age </b>
+<br>
+Normality Testing: 
+To test for noramilty of the continuous variables age, heart rate, and systolic blood pressure the Shapiro Wilks test was used. The distribution of the data was mapped using a QQ plot.
+<br>
+Hypotheses:
+<br>
+Ho: Systolic BP is normally distributed. P-Value > 0.05
+<br>
+Ha: Systolic BP is not normally distributed. P- Value <0.05
+<br>
+<table>
+<tr>
+<td> QQ Plot </td>
+<td> Shaprio-Wilk </td>
+<td> Conclusion </td>
+</tr>
+<tr>
+<td>
+```{r message=FALSE, warning=FALSE, error=FALSE }
+with(icu, qqPlot(Age, dist="norm", id=list(method="y", n=2, 
+  labels=rownames(icu))))
+```
+</td>
+<td>
+```{r message=FALSE, warning=FALSE, error=FALSE }
+normalityTest(~Age, test="shapiro.test", data=icu)
+```
+</td>
+<td>
+Based on the Shapiro-Wilk test, since the p-value is < 0.05, the null hypothesis can be rejected. Therefore, it can be concluded that age is not normally distributed.
+</td>
+</tr>
+</table>
+<br>
+<b> Systolic Blood Pressure </b>
+<br>
+Hypotheses:
+<br>
+Ho: Systolic BP is normally distributed. P-Value > 0.05.
+<br>
+Ha: Systolic BP is not normally distributed. P-Value <0.05.
+<br>
+<table>
+<tr>
+<td> QQ Plot </td>
+<td> Shaprio-Wilk </td>
+<td> Conclusion </td>
+</tr>
+<tr>
+<td>
+```{r message=FALSE, warning=FALSE, error=FALSE }
+with(icu, qqPlot(Systolic, dist="norm", id=list(method="y", n=2, 
+  labels=rownames(icu))))
+```
+</td>
+<td>
+```{r message=FALSE, warning=FALSE, error=FALSE }
+normalityTest(~Systolic, test="shapiro.test", data=icu)
+```
+</td>
+<td>
+From the Shapiro-Wilk test of the systolic blood pressure continuous variable, the P-Value was determined to be 0.02. Since this value is less than 0.05 we can reject the null hypothesis and conclude that systolic blood pressure is not normally distributed.
+</td>
+</tr>
+</table>
+
+<b> Heart Rate </b>
+<br>
+Hypotheses:
+<br>
+Ho: Heart rate is normally distributed. P-Value > 0.05.
+<br>
+Ha: Heart rate BP is not normally distributed. P-Value <0.05.
+<br>
+<table>
+<tr>
+<td> QQ Plot </td>
+<td> Shaprio-Wilk </td>
+<td> Conclusion </td>
+</tr>
+<tr>
+<td>
+```{r message=FALSE, warning=FALSE, error=FALSE }
+with(icu, qqPlot(HeartRate, dist="norm", id=list(method="y", n=2, 
+  labels=rownames(icu))))
+```
+</td>
+<td>
+```{r message=FALSE, warning=FALSE, error=FALSE }
+normalityTest(~HeartRate, test="shapiro.test", data=icu)
+```
+</td>
+<td>
+Based on the Shapiro-Wilk test of heart rate, the P-Value was determined to be 0.045. Since this value is less than 0.05 we can reject the null hypothesis and conclude that heart rate is not normally distributed. 
+</td>
+</tr>
+</table>
+
+```{r message=FALSE, warning=FALSE, error=FALSE }
+normalityTest(~HeartRate, 
+  test="ad.test", data=icu)
+```
+
+Because the P-Value obtained from Shapiro-Wilk test was close 0.05 the Anderson-Darling normality test was conducted to further investigate the normality of the heart rate data. The P-Value obtained from the Anderson-Darling normality test was 0.027 which is less than 0.05 meaning we can reject the null hypothesis and conclude that heart rate is not normally distributed.
+
+<b> NORMALITY TESTING CONCUSION </b>
+<br>
+The continuous variables age, systolic blood pressure and heart rate are all not normally distributed. 
+
+
+##Correlation
+<center><h3><b>Correlation</b></h3></center>
+
+Measuring the strength of assocition between two quantitative variables:
+<br>
+The quantitative variables in this study are heart rate, age and systolic blood pressure. Correlational analyses are used to look at the relationships between two varaibles to determine if the two variables are related to each other. Because age, heart rate and systolic blood pressure are all not normally distributed, the spearman's rank correlation coefficient was used to test correaltion between these variables.
+<br>
+<b> Spearman Correlation </b>
+
+```{r message=FALSE, warning=FALSE, error=FALSE }
+library (Hmisc)
+rcorr.adjust(icu[,
+  c("Age","HeartRate","Systolic"
+  )], type="spearman", 
+  use="complete")
+
+```
+
+<b> Correaltion Between Heart Rate and Systolic Blood Pressure </b>
+```{r message=FALSE, warning=FALSE, error=FALSE }
+library(plotly) 
+p <- ggplot(icu, aes(HeartRate,Systolic)) + geom_point()
+ ggplotly(p)
+```
+
+
+Ho: Systolic and HeartRate are not correlated.P-value> 0.05.
+<br>
+Ha: Systolic and HeartRate are correlated. P-value<0.05.
+<br>
+Based on the table above, we can cannot reject the null hypothesis because the p-value is greater than 0.05. Therefore we conclude that systolic and heart rate are not correlated.
+<br>
+Based on the table above, we can cannot reject the null hypothesis because the p-value of 0.4630  is greater than 0.05. Therefore we conclude that heart rate and systolic blood pressure are not correlated. 
+<br>
+Systolic blood pressure and heart rate have a correlation value of -0.0522 which is a weak negative correlation and means that 5.22% of the variation in systolic blood pressure is due to heart rate and vice versa. This is seen in the graph above which shows no distinct correlation between heart rate and systolic blood pressure. Based on this it can be concluded that none of the variation in systolic blood pressure is due to variation in heart rate.
+
+<b> Correaltion Between Age and Systolic Blood Pressure </b>
+```{r message=FALSE, warning=FALSE, error=FALSE }
+library(plotly) 
+p <- ggplot(icu, aes(Age,Systolic)) + geom_point()
+ ggplotly(p)
+```
+Hypothesis Testing:
+<br>
+Ho: Age and Systolic Blood Pressure are not correlated.P-value> 0.05.
+<br>
+Ha: Age and Systolic Blood pressure are correlated. P-value<0.05.
+<br>
+Conclusion:
+<br>
+Based on the table above, we can cannot reject the null hypothesis because the p-value of  0.4540 is greater than 0.05. Therefore we conclude that age and systolic blood pressure are not correlated. 
+<br>
+Systolic blood pressure and age have a correlation value of 0.0532 which is a weak positive correlation and means that 5.32% of the variation in systolic blood pressure is due to age and vice versa. This is seen in the graph above which shows no distinct correlation between age and systolic blood pressure. Based on this it can be concluded that none of the variation in systolic blood pressure is due to variation in age.
+
+
+
+<b> Correaltion Between Heart Rate and Age </b>
+```{r message=FALSE, warning=FALSE, error=FALSE }
+library(plotly) 
+p <- ggplot(icu, aes(Age,HeartRate)) + geom_point()
+ ggplotly(p)
+```
+Hypothesis Testing:
+<br>
+Ho: Age and HeartRate are not correlated.P-value> 0.05.
+<br>
+Ha: Age and HeartRate are correlated. P-value<0.05.
+<br>
+Conclusion:
+Based on the table above, we can cannot reject the null hypothesis because the p-value of 0.8089 is greater than 0.05. Therefore we conclude that age and heart rate are not correlated. <br>
+Heart rate and age have a correlation value of 0.0172 which is a weak positive correlation and means that 1.72% of the variation in heart rate is due to age and vice versa. This is seen in the graph above which shows no distinct correlation between age and heart rate. Based on this it can be concluded that none of the variation in heart rate is due to variation in age. 
+<br>
+
+To test the correlation between categorical variables dummy variables were used.
+
+
+
+From the correlation matrix above, we can conclude that there is a strong and significant correlation between the variables:
+- Type and service
+- Consciousness and status
+- Consciousness and CPR
+- PO2 and PCO2
+- PCO2 and PH
+The 'X' represent correlation between variables that are not significant. Therefore, these relationships must be considered during regression analysis.
+
+
+<b> CORRELATION TESTING CONCLUSION <b>
+<br>
+The variables age, heart rate, and systolic blood pressure are all not correlated with each other. 
+###Proportions
+
+Ho: The proportions of bicarbonate are not different
+Ha: Proportions are different
+
+```{r}
+local({
+  .Table <- xtabs(~ Bicarbonate , data= icu )
+  cat("\nFrequency counts (test is for first level):\n")
+  print(.Table)
+  prop.test(rbind(.Table), alternative='two.sided', p=.5, conf.level=.95, 
+  correct=FALSE)
+})
+```
+P value <0.05, reject null hypothesis and conclude that the proportions of bicarbonate are different 
+
+Ho: The proportions of cancer are not different
+Ha: Proportions are different
+
+```{r}
+local({
+  .Table <- xtabs(~ Bicarbonate , data= icu )
+  cat("\nFrequency counts (test is for first level):\n")
+  print(.Table)
+  prop.test(rbind(.Table), alternative='two.sided', p=.5, conf.level=.95, 
+  correct=FALSE)
+})
+```
+
+P value < 0.05, reject null hypothesis and conclude the proportions of having cancer vs not having cancer are different. 
+
+Ho: The proportions of CPR are not different
+
+Ha: Proportions are different
+
+```{r}
+local({
+  .Table <- xtabs(~ CPR , data= icu )
+  cat("\nFrequency counts (test is for first level):\n")
+  print(.Table)
+  prop.test(rbind(.Table), alternative='two.sided', p=.5, conf.level=.95, 
+  correct=FALSE)
+})
+```
+P value < 0.05, reject null hypothesis and conclude the proportions of having CPR prior to ICU vs not having CPR are different. 
+
+Ho: The proportions of creatinine are not different
+
+Ha: Proportions are different
+
+```{r}
+local({
+  .Table <- xtabs(~ Creatinine , data= icu )
+  cat("\nFrequency counts (test is for first level):\n")
+  print(.Table)
+  prop.test(rbind(.Table), alternative='two.sided', p=.5, conf.level=.95, 
+  correct=FALSE)
+})
+```
+
+P value < 0.05, reject null hypothesis and conclude the proportions of having high creatinine vs normal creatinine are different.
+
+Ho: The proportions of fracture are not different
+
+Ha: Proportions are different
+
+
+```{r}
+local({
+  .Table <- xtabs(~ Fracture , data= icu )
+  cat("\nFrequency counts (test is for first level):\n")
+  print(.Table)
+  prop.test(rbind(.Table), alternative='two.sided', p=.5, conf.level=.95, 
+  correct=FALSE)
+})
+```
+
+P value < 0.05, reject null hypothesis and conclude the proportions of having a fracture vs not are different. 
+
+Ho: The proportions of infection are not different
+
+Ha: Proportions are different
+
+
+```{r}
+local({
+  .Table <- xtabs(~ Infection , data= icu )
+  cat("\nFrequency counts (test is for first level):\n")
+  print(.Table)
+  prop.test(rbind(.Table), alternative='two.sided', p=.5, conf.level=.95, 
+  correct=FALSE)
+})
+```
+
+P value < 0.05, reject null hypothesis and conclude the proportions of having a probable infection at ICU admission vs not are different. 
+
+Ho: The proportions of PCO2 are not different
+
+Ha: Proportions are different
+
+
+```{r}
+local({
+  .Table <- xtabs(~ PCO2 , data= icu )
+  cat("\nFrequency counts (test is for first level):\n")
+  print(.Table)
+  prop.test(rbind(.Table), alternative='two.sided', p=.5, conf.level=.95, 
+  correct=FALSE)
+})
+```
+
+P value < 0.05, reject null hypothesis and conclude the proportions of high PCO2 and normal PCO2 are different. 
+
+Ho: The proportions of PH are not different
+
+Ha: Proportions are different
+
+```{r}
+local({
+  .Table <- xtabs(~ PH , data= icu )
+  cat("\nFrequency counts (test is for first level):\n")
+  print(.Table)
+  prop.test(rbind(.Table), alternative='two.sided', p=.5, conf.level=.95, 
+  correct=FALSE)
+})
+```
+
+P value < 0.05, reject null hypothesis and conclude the proportions of high PH and normal PH are different. 
+
+Ho: The proportions of PO2 are not different
+
+Ha: Proportions are different
+
+
+```{r}
+local({
+  .Table <- xtabs(~ PO2 , data= icu )
+  cat("\nFrequency counts (test is for first level):\n")
+  print(.Table)
+  prop.test(rbind(.Table), alternative='two.sided', p=.5, conf.level=.95, 
+  correct=FALSE)
+})
+```
+P value < 0.05, reject null hypothesis and conclude the proportions of high PO2 and normal PO2 are different. 
+
+
+Ho: The proportions of previous are not different
+
+Ha: Proportions are different
+
+```{r}
+local({
+  .Table <- xtabs(~ Previous , data= icu )
+  cat("\nFrequency counts (test is for first level):\n")
+  print(.Table)
+  prop.test(rbind(.Table), alternative='two.sided', p=.5, conf.level=.95, 
+  correct=FALSE)
+})
+```
+
+P value < 0.05, reject null hypothesis and conclude the proportions of having a previous admission to the ICU in the last 6 months vs not are different. 
+
+
+Ho: The proportions of renal are not different
+
+Ha: Proportions are different
+
+```{r}
+local({
+  .Table <- xtabs(~ Renal , data= icu )
+  cat("\nFrequency counts (test is for first level):\n")
+  print(.Table)
+  prop.test(rbind(.Table), alternative='two.sided', p=.5, conf.level=.95, 
+  correct=FALSE)
+})
+```
+
+P value < 0.05, reject null hypothesis and conclude the proportions of renal are different. 
+
+Ho: The proportions of service are not different
+
+Ha: Proportions are different
+
+```{r}
+local({
+  .Table <- xtabs(~ Service , data= icu )
+  cat("\nFrequency counts (test is for first level):\n")
+  print(.Table)
+  prop.test(rbind(.Table), alternative='two.sided', p=.5, conf.level=.95, 
+  correct=FALSE)
+})
+```
+
+P value >0.05, do not reject null hypothesis and conclude the proportions of medical vs surgical service are the same. 
+
+
+Ho: The proportions of sex are not different
+
+Ha: Proportions are different
+
+```{r}
+local({
+  .Table <- xtabs(~ Sex , data= icu )
+  cat("\nFrequency counts (test is for first level):\n")
+  print(.Table)
+  prop.test(rbind(.Table), alternative='two.sided', p=.5, conf.level=.95, 
+  correct=FALSE)
+})
+```
+
+P value <0.05, reject null hypothesis and conclude the proportions of females vs males are not the same. 
+
+Ho: The proportions of status are not different
+
+Ha: Proportions are different
+
+```{r}
+local({
+  .Table <- xtabs(~ Status , data= icu )
+  cat("\nFrequency counts (test is for first level):\n")
+  print(.Table)
+  prop.test(rbind(.Table), alternative='two.sided', p=.5, conf.level=.95, 
+  correct=FALSE)
+})
+```
+
+P value <0.05, reject null hypothesis and conclude the proportions of vital signs lived vs died are not the same. 
+
+Ho: The proportions of type are not different
+
+Ha: Proportions are different
+
+```{r}
+local({
+  .Table <- xtabs(~ Type , data= icu )
+  cat("\nFrequency counts (test is for first level):\n")
+  print(.Table)
+  prop.test(rbind(.Table), alternative='two.sided', p=.5, conf.level=.95, 
+  correct=FALSE)
+})
+```
+
+P value <0.05, reject null hypothesis and conclude the proportions of elective vs emergency admission are not the same. 
+
+In conclusion, the proportions of bicarbonate, cancer, CPR, creatinine, infection, PCO2, PH, PO2, renal, sex, status, and type are not the same. However, the catagories of fracture, previous, and service have the same proportions.
+
+### Kruskal-Wallis
+
+Ho: The distribution of age is the same regardless of status
+
+Ha: The distribution of age is not the same regardless of status
+
+```{r echo=FALSE}
+with(icu, tapply(Age, Status, median, na.rm=TRUE))
+kruskal.test(Age ~ Status, data=icu)
+```
+
+P value < 0.05, reject the null hypothesis and conclide that the distribution of age is not the same regardless of status. 
+
+
+Ho: The distribution of heartrate is the same regardless of status
+
+Ha: The distribution of heartrate is not the same regardless of status
+
+```{r echo=FALSE}
+with(icu, tapply(HeartRate, Status, median, na.rm=TRUE))
+kruskal.test(HeartRate ~ Status, data=icu)
+```
+
+P value >0.05, do not reject the null hypothesis and conclude that the distribution of heart rate is the same regardless of status.
+
+
+Ho: The distribution of systolic is the same regardless of status
+
+Ha: The distribution of systolic is not the same regardless of status
+
+```{r echo=FALSE}
+with(icu, tapply(Systolic, Status, median, na.rm=TRUE))
+kruskal.test(Systolic ~ Status, data=icu)
+```
+
+P value <0.05, reject the null hypothesis and conclude that the distribution of systolic is not the same regardless of status. 
+
+
+### Chi Square
+
+
+```{r echo=FALSE}
+icu <- within(icu, {
+  Status <- factor(Status, 
+  labels=c('Lived','Died'))
+})
+```
+
+```{r echo=FALSE}
+icu <- within(icu, {
+  Sex <- factor(Sex, 
+  labels=c('Lived','Died'))
+})
+```
+
+```{r echo=FALSE}
+pacman::p_load(sjPlot)
+```
+
+Check lambda first then check chi square. 0 = no increase in ability to predict dependent. 1= 100% certain predict correctly 
+
+Ho: Lambda = 0, i.e., sex does not help to predict status, α= 0.05
+
+Ha: Lambda ≠ 0, i.e., sex does help to status 
+
+
+Ho: Lambda = 0, i.e., service does not help to predict status, α= 0.05
+
+Ha: Lambda ≠ 0, i.e., service does help to status 
+
+
+
+Ho: Lambda = 0, i.e., cancer does not help to predict status, α= 0.05
+
+Ha: Lambda ≠ 0, i.e., cancer does help to status 
+
+
+
+Ho: Lambda = 0, i.e., renal does not help to predict status, α= 0.05
+
+Ha: Lambda ≠ 0, i.e., renal does help to status 
+
+
+
+Ho: Lambda = 0, i.e., CPR does not help to predict status, α= 0.05
+
+Ha: Lambda ≠ 0, i.e., CPR does help to status 
+
+
+
+Ho: Lambda = 0, i.e., previous does not help to predict status, α= 0.05
+
+Ha: Lambda ≠ 0, i.e., previous does help to status 
+
+
+
+Ho: Lambda = 0, i.e., fracture does not help to predict status, α= 0.05
+
+Ha: Lambda ≠ 0, i.e., fracture does help to status 
+
+
+
+Ho: Lambda = 0, i.e., PO2 does not help to predict status, α= 0.05
+
+Ha: Lambda ≠ 0, i.e., PO2 does help to status 
+
+
+
+Ho: Lambda = 0, i.e., PH does not help to predict status, α= 0.05
+
+Ha: Lambda ≠ 0, i.e., PH does help to status 
+
+
+
+Ho: Lambda = 0, i.e., PC02 does not help to predict status, α= 0.05
+
+Ha: Lambda ≠ 0, i.e., PC02 does help to status 
+
+
+
+Ho: Lambda = 0, i.e., Bicarbonate does not help to predict status, α= 0.05
+
+Ha: Lambda ≠ 0, i.e., Bicarbonate does help to status 
+
+
+
+Ho: Lambda = 0, i.e., Creatinine does not help to predict status, α= 0.05
+
+Ha: Lambda ≠ 0, i.e., Creatinine does help to status 
+
+
+
+Ho: Lambda = 0, i.e., Conciousness does not help to predict status, α= 0.05
+
+Ha: Lambda ≠ 0, i.e., Conciousness does help to status
+
+THEN CHECK CHI SQUARE!
+
+Ho: No association between Status and Sex 
+
+Ha: Association
+
+```{r echo=FALSE}
+sjt.xtab(icu$Sex, icu$Status, 
+  show.col.prc=TRUE)
+```
+
+P value > 0.05, do not reject the null hypothesis, conclude that there is not an association between status and sex.
+
+Ho: No association between Status and Race 
+
+Ha: Association
+
+```{r echo=FALSE}
+sjt.xtab(icu$Race, icu$Status, 
+  show.col.prc=TRUE)
+```
+
+P value > 0.05, do not reject the null hypothesis, conclude that there is not an association between status and race 
+
+Ho: No association between Status and Service 
+
+Ha: Association
+
+```{r echo=FALSE}
+sjt.xtab(icu$Service, icu$Status, 
+  show.col.prc=TRUE)
+```
+
+P value < 0.05, reject the null hypothesis, conclude that there is an association between status and service. 
+
+Ho: No association between Status and Cancer 
+
+Ha: Association
+
+```{r echo=FALSE}
+sjt.xtab(icu$Cancer, icu$Status, 
+  show.col.prc=TRUE)
+```
+
+P value > 0.05, do not reject the null hypothesis, conclude that there is not an association between status and cancer. 
+
+Ho: No association between Status and Renal 
+
+Ha: Association
+
+```{r echo=FALSE}
+sjt.xtab(icu$Renal, icu$Status, 
+  show.col.prc=TRUE)
+```
+
+P value < 0.05, reject the null hypothesis, conclude that there is an association between status and renal. 
+
+Ho: No association between Status and Infection 
+
+Ha: Association
+
+```{r echo=FALSE}
+sjt.xtab(icu$Infection, icu$Status, 
+  show.col.prc=TRUE)
+```
+
+P value < 0.05, reject the null hypothesis, conclude that there is an association between status and infection. 
+
+Ho: No association between Status and CPR 
+
+Ha: Association
+
+```{r echo=FALSE}
+sjt.xtab(icu$CPR, icu$Status, 
+  show.col.prc=TRUE)
+```
+
+P value < 0.05, reject the null hypothesis, conclude that there is an association between status and CPR. 
+
+Ho: No association between Status and Previous 
+
+Ha: Association
+
+```{r echo=FALSE}
+sjt.xtab(icu$Previous, icu$Status, 
+  show.col.prc=TRUE)
+```
+
+P value > 0.05, do not reject the null hypothesis, conclude that there is not an association between status and previous. 
+
+Ho: No association between Status and Type 
+
+Ha: Association
+
+```{r echo=FALSE}
+sjt.xtab(icu$Type, icu$Status, 
+  show.col.prc=TRUE)
+```
+
+P value < 0.05, reject the null hypothesis, conclude that there is  an association between status and type. 
+
+Ho: No association between Status and Fracture 
+
+Ha: Association
+
+```{r echo=FALSE}
+sjt.xtab(icu$Fracture, icu$Status, 
+  show.col.prc=TRUE)
+```
+
+P value > 0.05, do not reject the null hypothesis, conclude that there is not an association between status and fracture. 
+
+Ho: No association between Status and PO2 
+
+Ha: Association
+
+```{r echo=FALSE}
+sjt.xtab(icu$PO2, icu$Status, 
+  show.col.prc=TRUE)
+```
+
+P value > 0.05, do not reject the null, conclude that  that is not an association between status and fracture. 
+
+Ho: No association between Status and PH 
+
+Ha: Association
+
+```{r echo=FALSE}
+sjt.xtab(icu$PH, icu$Status, 
+  show.col.prc=TRUE)
+```
+
+P value > 0.05, do not reject the null, conclude that  that is not an association between status and PH. 
+
+Ho: No association between Status and PCO2 
+
+Ha: Association
+
+```{r echo=FALSE}
+sjt.xtab(icu$PCO2, icu$Status, 
+  show.col.prc=TRUE)
+```
+
+P value > 0.05, do not reject the null, conclude that  that is not an association between status and PCO2 
+
+Ho: No association between Status and Bicarbonate 
+
+Ha: Association
+
+```{r echo=FALSE}
+sjt.xtab(icu$Bicarbonate, icu$Status, 
+  show.col.prc=TRUE)
+```
+
+P value > 0.05, do not reject the null, conclude that  that is not an association between status and bicarbonate. 
+
+Ho: No association between Status and Creatinine 
+
+Ha: Association
+
+```{r echo=FALSE}
+sjt.xtab(icu$Creatinine, icu$Status, 
+  show.col.prc=TRUE)
+```
+
+P value < 0.05, reject the null, conclude that  that is an association between status and creatinine. 
+
+Ho: No association between Status and Consciousness 
+
+Ha: Association
+
+```{r echo=FALSE}
+sjt.xtab(icu$Consciousness, icu$Status, 
+  show.col.prc=TRUE)
+```
+
+P value < 0.05, reject the null, conclude that  that is an association between status and conciousness.  
+
+In conclusion, service, renal, infection, CPR, Type, Creatinine and conciousness each have an association to Status.
+
+#Outliers
+
+```{r echo=FALSE}
+library(mvoutlier)
+outliers <- aq.plot(icu[c("HeartRate","Age")])
+outliers # show list of outliers 
+```
+
+There are 20 outliers in the data Heartrate-Age
+
+```{r echo=FALSE}
+library(mvoutlier)
+outliers <- aq.plot(icu[c("HeartRate","Systolic")])
+outliers # show list of outliers 
+```
+
+There are 8 outliers in the data heartrate-systolic.
+
+```{r echo=FALSE}
+library(mvoutlier)
+outliers <- aq.plot(icu[c("Age","Systolic")])
+outliers # show list of outliers 
+```
+
+There are 0 outliers in the data age-systolic. 
+##Predictive Model
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+DemographicModel <- glm(Status ~ Age + 
+  + Race  + Sex , family=binomial(logit), 
+  data=icu)
+
+tab_model(DemographicModel)
+
+
+ plot_model(DemographicModel, show.values=TRUE, value.offset = .3)
+ 
+ ##lets look at just age
+```
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+DemographicModel <- glm(Status ~ Age, family=binomial(logit), 
+  data=icu)
+
+tab_model(DemographicModel)
+
+
+ plot_model(DemographicModel, show.values=TRUE, value.offset = .3)
+ 
+ 
+```
+
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+AdmissionsModel <- glm(Status ~   Consciousness + CPR + 
+   + Previous + Service + Type, family=binomial(logit), 
+  data=icu)
+
+tab_model(AdmissionsModel)
+
+
+ plot_model(AdmissionsModel, show.values=TRUE, value.offset = .3)
+ 
+ ##From this we keep Consciousness and Type
+```
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+AdmissionsModel2 <- glm(Status ~   Consciousness + 
+    Type, family=binomial(logit), 
+  data=icu)
+
+tab_model(AdmissionsModel2)
+
+
+ plot_model(AdmissionsModel2, show.values=TRUE, value.offset = .3)
+ 
+ ##Still both significant
+```
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+ClinicalModel <- glm(Status ~  Bicarbonate + Cancer +  
+  Creatinine + Fracture + HeartRate + Infection + PCO2 + PH + PO2 + Renal  +  Systolic , family=binomial(logit), 
+  data=icu)
+
+tab_model(ClinicalModel)
+
+
+ plot_model(ClinicalModel, show.values=TRUE, value.offset = .3)
+ 
+ ##From this we keep Systolic
+```
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+ClinicalModel2 <- glm(Status ~    Systolic , family=binomial(logit), 
+  data=icu)
+
+tab_model(ClinicalModel2)
+
+
+ plot_model(ClinicalModel2, show.values=TRUE, value.offset = .3)
+ 
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+FullModel <- glm(Status ~ Age + Bicarbonate + Cancer + Consciousness + CPR + 
+  Creatinine + Fracture + HeartRate + Infection + PCO2 + PH + PO2 + Previous 
+  + Race + Renal + Service + Sex + Systolic + Type, family=binomial(logit), 
+  data=icu)
+
+tab_model(FullModel)
+
+
+ plot_model(FullModel, show.values=TRUE, value.offset = .3)
+ 
+ ##From this we keep age Cancer and Consciousness and Type
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+FullModel2 <- glm(Status ~ Age  + Cancer + Consciousness +Type, family=binomial(logit), 
+  data=icu)
+
+tab_model(FullModel2)
+
+
+ plot_model(FullModel2, show.values=TRUE, value.offset = .3)
+ 
+ ##From this we keep age Cancer and Consciousness and Type
+```
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, results=FALSE}
+stepwise(FullModel, direction='forward/backward', criterion='BIC')
+##doesn't get Cancer
+```
+
+```{r, echo=FALSE, message-FALSE, warning=FALSE, eval=FALSE}
+icu <- within(icu, {fitted.GLM.7 <- fitted(GLM.7) 
+})
+```
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+set.seed(0)
+train_test_split <- initial_split(icu, prop = 0.7)
+train <- training(train_test_split)
+test <- testing(train_test_split)
+```
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+Train <- glm(Status ~  Age + Type + Consciousness, 
+  family=binomial(logit), data=train)
+ 
+tab_model(Train)
+```
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+Train <- glm(Status ~  Age + Type + Consciousness, 
+  family=binomial(logit), data=train)
+ 
+tab_model(Train)
+```
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+predicted <- predict(Train, newdata=test  ) # # 
+actual <- test$Status  # actual Intention to Return for the testing sample
+x <- as.data.frame(cbind(actual, predicted))  
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+cor.test(x$actual,x$predicted) # hypothesis test for correlation
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+library(ggplot2)
+ggplot(data=x, aes(x=predicted, y=actual)) + geom_jitter(width=0.15) + geom_smooth(method=lm)
+actualvpredict <- lm(actual ~ predicted, x)
+tab_model(actualvpredict)
+```
+
+#Regression
+
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+vif(lm(Status ~ Age + Bicarbonate + Cancer + Consciousness + CPR + 
+  Creatinine + Fracture + HeartRate + Infection + PCO2 + PH + PO2 + Previous + Race + Renal + Service + Sex + Systolic + Type, data=icu))
+```
+
+MODEL 1: Vital Status vs. Age, Bicarbonate, Cancer, Consciousness, CPR, Creatinine, Fracture, HeartRate, Infection, PCO~2~, PH, PO~2~, Previous, Race, Renal, Service, Sex, Systolic, & Type
+
+*Ho: None of the independent variables in the data set do not predict hospital mortality of ICU patients, based on information available at the time of ICU admissions.
+
+*Ha: Some of the independent variables in the data set do predict hospital mortality of ICU patients, based on information available at the time of ICU admissions.
+
+Table X.3. Logistic Regression of MODEL 1 using a Generalized Linear Model
+```{r}
+GLM.2 <- glm(Status ~ Age + Bicarbonate + Cancer + Consciousness + CPR + 
+  Creatinine + Fracture + HeartRate + Infection + PCO2 + PH + PO2 + Previous 
+  + Race + Renal + Service + Sex + Systolic + Type, family=binomial(logit), 
+  data=icu)
+summary(GLM.2)
+exp(coef(GLM.2))  # Exponentiated coefficients ("odds ratios")
+```
+
+__ANALYSIS OF MODEL 1__
+
+*Which independent variables in the data set are statistically significant in regard to predicting Vital Status?*
+
+* In Table 4. the following independent variables are identified **statistically significant** at an alpha level of 0.05 in regard to prediting Vital Status of patients admitted to the ICU. The variables are listed in order of greatest signifiance to least significance, based on p-values:
+    1.  CancerYes = 0.00189  
+    2.  Age = 0.00225
+    3.  TypeEmergency = 0.00523
+    4.  ConsciousnessConscious = 0.00994
+    5.  Systolic = 0.02732
+* Null Deviance > Residual Deviance?
+        + YES, decreases by 88 points, indicatig a good model.
+* AIC Value = 156.17
+* Confidence Intervals (see Table X.3):
+    + None of the above five varialbes confidence intervals include 1, which indicates the variables are statistically significant. 
+* ODDS Ratios:
+    1.  CancerYes = 0.03072734
+    2.  Age = 0.9451114 
+    3.  TypeEmergency =  0.02356767
+    4.  ConsciousnessConscious = 31.76531
+    5.  Systolic = 1.021058
+
+Therefore, we can state the predictor variables of CancerYes, Age, TypeEmergency, ConsciousnessConscious, and Systolic have a statistically significant relation with Vital Staus. Based of the above information, we reject the null hypothesis and state these five independent variables can be used to predict hospital mortality of ICU patients. Based on the odds ratios, Level of Consciousness at admission (no coma) is the greatest predictor of Vital Status. A patient admitted to the ICU is 31.7 times more likely to have a Vital Status = 0 (Lived) if they have a Consciousness Level = 0 (no coma).
+
+__ANALYSIS OF RUNNING A LOGISITC REGRESSION, ADDING ONE SIGNIFICANT VARIABLE AT A TIME TO COMPARE AIC SCORES__
+
+__MODEL 2: Vital Status vs. CancerYes__
+
+Table X.4. Logistic Regression of MODEL 2
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+GLM.3<- glm(Status ~ Cancer, family=binomial(logit), 
+  data=icu)
+summary(GLM.3)
+exp(coef(GLM.3))  # Exponentiated coefficients ("odds ratios")
+```
+
+
+__MODEL 3: Vital Status vs. CancerYes & Age__
+
+Table X.5. Logistic Regression of MODEL 3
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+GLM.4<- glm(Status ~ Cancer + Age, family=binomial(logit), 
+  data=icu)
+summary(GLM.4)
+exp(coef(GLM.4))  # Exponentiated coefficients ("odds ratios")
+```
+
+__MODEL 4: Vital Status vs. CancerYes, Age & TypeEmergency__
+
+Table X.6. Logistic Regression of MODEL 4
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+GLM.5<- glm(Status ~ Cancer + Age + Type, family=binomial(logit), 
+  data=icu)
+summary(GLM.5)
+exp(coef(GLM.5))  # Exponentiated coefficients ("odds ratios")
+```
+
+__MODEL 5: Vital Status vs. CancerYes, Age, TypeEmergency & ConsciousnessConscious__
+
+Table X.7. Logistic Regression of MODEL 5
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+GLM.6<- glm(Status ~ Cancer + Age + Type + Consciousness, family=binomial(logit), 
+  data=icu)
+summary(GLM.6)
+exp(coef(GLM.6))  # Exponentiated coefficients ("odds ratios")
+```
+
+__MODEL 6: Vital Status vs. CancerYes, Age, TypeEmergency, ConsciousnessConscious & Systolic__
+
+Table X.8. Logistic Regression of MODEL 6
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+GLM.7<- glm(Status ~ Cancer + Age + Type + Consciousness + Systolic, family=binomial(logit), 
+  data=icu)
+summary(GLM.7)
+exp(coef(GLM.7))  # Exponentiated coefficients ("odds ratios")
+```
+
+__BIC MODEL: Bayesian Information Criterion__
+
+* In statistics, the Bayesian information criterion (BIC) for model selection among a finite set of models. It is based, in part, on the likelihood function, and it is closely related to Akaike information criterion (AIC).
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+stepwise(GLM.2, direction='forward/backward', criterion='BIC')
+```
+
+Table X.9. Comparison of AIC Scores from our Logistic Models
+
+|MODELS     | AIC SCORE   |
+|-----------|-------------|
+| Model 1   | 156.17      |
+| Model 2   | 204.16      |
+| Model 3   | 198.29      |
+| Model 4   | 177.13      |
+| Model 5   | 146.59      |
+| Model 6   | 142.44      |
+| BIC Model | 142.4       |
+
+__ANALYSIS__
+
+* We completed our own linear regresssion using the five statistically significant variables identified by Model 1 of CancerYes, Age, TypeEmergency, ConsciousnessConscious & Systolic. We ran the Model 5 more times, adding one Independent Variable each time and assessing if the AIC score dropped (a lower AIC score indicates an improvement in the model). Our final Model 6 (will all five independent variables included) produced the lowest AIC score of 142.44. 
+* We then verified our findings by using a Step-Wise Forward-Backward Bayesian Regression Model
+    + The BIC model proved our Model 6 findings to be true because:
+        + we achived the same AIC score of 142.4
+        + the independent variables identified as significant (indicated by a minus sign) were the same.
+
+> In conclusion, our logistic regression analysis leads us to find the best predictors of Vital Status for patients admitted to the ICU are: (1) CancerYes, (2) Age, (3) TypeEmergency, (4) ConsciousnessConscious, and (5) Systolic.
+
+*Note: fitted values for Model 6 = predicted values
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+icu <- within(icu, {fitted.GLM.7 <- fitted(GLM.7) 
+})
+```
+
+> Setting up the Training and Testing Models
+
+__WHY USE TRAINING VS TESTING SAMPLES?__
+
+* Logistic regression models are trying to predict as well as possible.
+* To better test how the model will work in reality, we train the model on 70% of the sample and hold 30% aside to test as “new” sample. We will predict values of the dependent variable in the “holdout” sample using the model built on the “training” sample.
+* We will use the Regression on the findings from the training sample to predict group membership among those in the “testing” sample.
+    + The training & test samples are kept separate so that we can objectively test the quality of the modeling and prediction.
+
+Splitting the dataset into training sample (70%) and testing sample (30%).
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+library(rsample)
+set.seed(0)
+train_test_split <- initial_split(icu, prop = 0.7)
+train <- training(train_test_split)
+test <- testing(train_test_split)
+```  
+
+The training sample size is `r nrow(train)` and the testing sample size is `r nrow(test)`.
+
+
+__Prediction of our Training Model:__
+
+* The intent of our training model is to predict the mortality odds of a patient being diagnosed with a Vital Status = 1 (died) based on the informiation available at the time of ICU admission, specifically using the best predictor variables of CancerYes, Age, TypeEmergency, ConsciousnessConscious, & Systolic. If we have a good training model, we can make more detailed predictions. 
+
+*Ho: CancerYes, Age, TypeEmergency, ConsciousnessConscious, & Systolic do not predict hospital mortality of ICU patients, based on information available at the time of ICU admissions.
+
+*Ha: CancerYes, Age, TypeEmergency, ConsciousnessConscious, & Systolic do predict hospital mortality of ICU patients, based on information available at the time of ICU admissions.
+
+Table X.11. Logistic Regression of Training Model
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+GLM.Train <- glm(Status ~ Cancer + Age + Type + Consciousness + Systolic, 
+  family=binomial(logit), data=train)
+summary(GLM.Train)
+exp(coef(GLM.Train))  
+  # Exponentiated coefficients ("odds ratios")
+tab_model(GLM.Train)
+```
+
+__ANALYSIS OF TRAINING MODEL__
+
+* For our Training Model, Table X.11 identifies the following variables as **statistically significant** at an alpha level of 0.05 in regard to dpredict hospital mortality of ICU patients. The variables are listed in order of greatest signifiance to least based on p-values:
+    1.  Consciousness(Conscious): smallest p-value of 0.00429 
+    2.  Systolic: 0.00625
+    3.  Age: 0.01196
+    4.  Type(Emergency): 0.02396
+    5.  Cancer(Yes): 0.03402
+
+Table X.12. Comparison of Independent Varibables Identified as Statistically Significant in Model 6 and the Training Model
+ 
+ Mod. 6 Statistically Sig. Variables |Training Model Statistically Sig. Variables|
+|------------------------------------|------------------------------------|
+| 1. *Type(Emergency)*               | 1. *Consciousness(Conscious)*      |
+| 2. *Age*                           | 2. *Systolic*                      |
+| 3. *Consciousness(Conscious)*      | 3. *Age*                           |
+| 4. *Cancer(Yes)*                   | 4. *Type(Emergency)*               |
+| 5. *Systolic*                      | 5. *Cancer(Yes)*                   |
+
+Note: variables are listed for each model in order of decreasing statistical significance by p-value; 1 = most statistically significant (smallest p-value furtherest from a 0.05 Type 1 Error), 5 = least statisically significant (greatest p-value closest to 0.05 Type 1 Error)
+
+* Null Deviance > Residual Deviance?
+      + YES, decreases 60 points, indicating a good model.
+* AIC Value = 99.766
+      + The lowest AIC so far, a lower AIC value indicated an improvement in the model
+* Confidence Intervals:
+    + None of the confidence intervals include 1, which indicates the variables are statistically significant. 
+* ODDS Ratios:
+    1.  Consciousness(Conscious): 31.39354
+    2.  Systolic: 1.030978
+    3.  Age: 0.9600484 
+    4.  Type(Emergency): 0.02455223  
+    5.  Cancer(Yes): 0.05049618
+
+The training model is an improvement upon our Model 6 Logisitic Regression Model as the significance of each variable based upon p-values aligns with the predictabilty of the odds ratios. In addition, our AIC value is the lowest at a value of 99.77. Based on the above information, we reject thhe null hypothesis and state CancerYes, Age, TypeEmergency, ConsciousnessConscious, & Systolic do predict hospital mortality of ICU patients, based on information available at the time of ICU admissions. Based on the odds ratios, Level of Consciousness at admission (no coma) is still the greatest predictor of Vital Status. A patient admitted to the ICU is 31.4 times more likely to have a Vital Status = 0 (Lived) if they have a Consciousness Level = 0 (no coma).
+
+
+> Using the Training Model to Predict Our Testing Model
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+test <- within(test, {
+  fitted.GLM.Train <- fitted(GLM.Train)
+  })
+```
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+test <- within(test, {
+  fitted_Statusrecode <- Recode(fitted.GLM.Train, '0:0.49 = "Lived"; 0.5:1 = "Died"', 
+  as.factor=TRUE)
+})
+```
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+predicted <- test$fitted_Statusrecode
+actual <- test$Status
+
+x <- as.data.frame(cbind(actual, predicted))  
+
+x$actual = factor(x$actual, levels = c(1,2), labels = c("Lived", "Died"))
+x$predicted = factor(x$predicted, levels = c(1,2), labels = c("Lived", "Died"))
+ 
+#datatable( x, filter="top", rownames = FALSE, options = list(pageLength = 10, scrollX=T ), colnames=c('Actual', 'Predicted'))
+```
+
+
+*Table X.14. Logistic Regression for Vital Status of Testing Model*
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+GLM.Predicted <- glm(actual ~ predicted, 
+  family=binomial(logit), data=test)
+summary(GLM.Predicted)
+```
+
+*Table X.13. Comparing Actual and Predicted Values for Severity within the Testing Model*
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+sjt.xtab(predicted, actual, show.row.prc = TRUE)
+```
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+ GLM.8 <- lm(actual ~ predicted, x)
+```
+
+
+>CHANGE THIS FOR OUR DATA WHEN THE PROPER CHARTS ARE HERE!!!The regression of actual on predicted demonstrated a p value < 0.05,therefore rejct null hypothesis and conclude that predicted is significantly related to actual. However, the rsquared value of 0.391 indicates that only 39% of actuals can be attributed to predicted. This indicates that this model is not strong in predicting whether a tumour is malignant vs benign. 
+#Key Findings
+
+#Health System Reccomendations
+
+
