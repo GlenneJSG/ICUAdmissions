@@ -1,0 +1,12 @@
+name: ICUAdmissions
+title: ICUAdmissions
+username:
+account: glenne
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 864343
+bundleId: 2011012
+url: https://glenne.shinyapps.io/ICUAdmissions/
+when: 1555287393.45655
+asMultiple: FALSE
+asStatic: FALSE

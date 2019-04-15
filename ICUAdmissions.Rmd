@@ -6,15 +6,17 @@ output:
   html_document: 
     number_sections: TRUE
     code_folding: hide
-    toc: yes
-    toc_float: 
-      toc_collapsed: true
+    toc: true
+    theme: united
+    toc_float: true
+
+chunk_output_type: inline
+      
 runtime: shiny
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-
+knitr::opts_chunk$set(echo =FALSE, message=FALSE, warning=FALSE, error=FALSE)
 library(Rcmdr)
 library(car)
 library(RcmdrMisc)
@@ -34,7 +36,6 @@ library(rsample, pos=21)
 library(DT, pos=23)
 library(dplyr)
 library(jtools)
-
 library(magrittr)
 library(RcmdrMisc)
 library(Rcmdr)
@@ -67,7 +68,6 @@ library (multcompView)
 library (DescTools)
 library (tidyr)
 library (plotly)
-
 
 icu <- read.table("icu_factored.csv", header=TRUE, sep=",", na.strings="NA", dec=".", strip.white=TRUE)
 
@@ -214,7 +214,7 @@ In terms of running a logistic regression, we had to convert all categorical var
 
 #Analysis
 
-##Analysis of Attributes
+##Analysis of Attributes{.tabset .tabset-fade}
 
 ###Demographics
 
@@ -239,8 +239,6 @@ renderPlot({
 lbls <- paste(names(mytable), "\n", mytable, sep="")
 pie(mytable, labels = lbls)
 }
-
-
 )
 ```
 
@@ -278,6 +276,7 @@ Based on analysis of the demographics of the participants in the study, it can b
 <br>
 In addition, the graph above that shows the percentage survival by age shows that in all age categories except 90-94 there are more participants that lived than died, and that in general younger participants were more likely to live compared to older participants.
 
+
 ###Admissions
 
 ```{r echo = FALSE}
@@ -307,6 +306,7 @@ pie2
 #### Conclusion
 
 Analysis of the graphs above indicate that a majority of participants had not been admitted into the ICU in the last 6 months and that the majority of the admissions were emergency admissions. In addition a majority of the type of service provided to participants were surgical, though the difference was not substantial (107 vs 93)
+
 
 ###Clinical
 
@@ -446,7 +446,7 @@ Based on the Shapiro-Wilk test of heart rate, the P-Value was determined to be 0
 
 ```{r message=FALSE, warning=FALSE, error=FALSE }
 normalityTest(~HeartRate, 
-  test="ad.test", data=icu)
+ test="ad.test", data=icu)
 ```
 
 Because the P-Value obtained from Shapiro-Wilk test was close 0.05 the Anderson-Darling normality test was conducted to further investigate the normality of the heart rate data. The P-Value obtained from the Anderson-Darling normality test was 0.027 which is less than 0.05 meaning we can reject the null hypothesis and conclude that heart rate is not normally distributed.
@@ -560,6 +560,437 @@ The 'X' represent correlation between variables that are not significant. Theref
 <br>
 The variables age, heart rate, and systolic blood pressure are all not correlated with each other. 
 
+
+###Proportions
+
+Ho: The proportions of bicarbonate are not different
+Ha: Proportions are different
+
+```{r}
+local({
+  .Table <- xtabs(~ Bicarbonate , data= icu )
+  cat("\nFrequency counts (test is for first level):\n")
+  print(.Table)
+  prop.test(rbind(.Table), alternative='two.sided', p=.5, conf.level=.95, 
+  correct=FALSE)
+})
+```
+P value <0.05, reject null hypothesis and conclude that the proportions of bicarbonate are different 
+
+Ho: The proportions of cancer are not different
+Ha: Proportions are different
+
+```{r}
+local({
+  .Table <- xtabs(~ Bicarbonate , data= icu )
+  cat("\nFrequency counts (test is for first level):\n")
+  print(.Table)
+  prop.test(rbind(.Table), alternative='two.sided', p=.5, conf.level=.95, 
+  correct=FALSE)
+})
+```
+
+P value < 0.05, reject null hypothesis and conclude the proportions of having cancer vs not having cancer are different. 
+
+Ho: The proportions of CPR are not different
+
+Ha: Proportions are different
+
+```{r}
+local({
+  .Table <- xtabs(~ CPR , data= icu )
+  cat("\nFrequency counts (test is for first level):\n")
+  print(.Table)
+  prop.test(rbind(.Table), alternative='two.sided', p=.5, conf.level=.95, 
+  correct=FALSE)
+})
+```
+P value < 0.05, reject null hypothesis and conclude the proportions of having CPR prior to ICU vs not having CPR are different. 
+
+Ho: The proportions of creatinine are not different
+
+Ha: Proportions are different
+
+```{r}
+local({
+  .Table <- xtabs(~ Creatinine , data= icu )
+  cat("\nFrequency counts (test is for first level):\n")
+  print(.Table)
+  prop.test(rbind(.Table), alternative='two.sided', p=.5, conf.level=.95, 
+  correct=FALSE)
+})
+```
+
+P value < 0.05, reject null hypothesis and conclude the proportions of having high creatinine vs normal creatinine are different.
+
+Ho: The proportions of fracture are not different
+
+Ha: Proportions are different
+
+
+```{r}
+local({
+  .Table <- xtabs(~ Fracture , data= icu )
+  cat("\nFrequency counts (test is for first level):\n")
+  print(.Table)
+  prop.test(rbind(.Table), alternative='two.sided', p=.5, conf.level=.95, 
+  correct=FALSE)
+})
+```
+
+P value < 0.05, reject null hypothesis and conclude the proportions of having a fracture vs not are different. 
+
+Ho: The proportions of infection are not different
+
+Ha: Proportions are different
+
+
+```{r}
+local({
+  .Table <- xtabs(~ Infection , data= icu )
+  cat("\nFrequency counts (test is for first level):\n")
+  print(.Table)
+  prop.test(rbind(.Table), alternative='two.sided', p=.5, conf.level=.95, 
+  correct=FALSE)
+})
+```
+
+P value < 0.05, reject null hypothesis and conclude the proportions of having a probable infection at ICU admission vs not are different. 
+
+Ho: The proportions of PCO2 are not different
+
+Ha: Proportions are different
+
+
+```{r}
+local({
+  .Table <- xtabs(~ PCO2 , data= icu )
+  cat("\nFrequency counts (test is for first level):\n")
+  print(.Table)
+  prop.test(rbind(.Table), alternative='two.sided', p=.5, conf.level=.95, 
+  correct=FALSE)
+})
+```
+
+P value < 0.05, reject null hypothesis and conclude the proportions of high PCO2 and normal PCO2 are different. 
+
+Ho: The proportions of PH are not different
+
+Ha: Proportions are different
+
+```{r}
+local({
+  .Table <- xtabs(~ PH , data= icu )
+  cat("\nFrequency counts (test is for first level):\n")
+  print(.Table)
+  prop.test(rbind(.Table), alternative='two.sided', p=.5, conf.level=.95, 
+  correct=FALSE)
+})
+```
+
+P value < 0.05, reject null hypothesis and conclude the proportions of high PH and normal PH are different. 
+
+Ho: The proportions of PO2 are not different
+
+Ha: Proportions are different
+
+
+```{r}
+local({
+  .Table <- xtabs(~ PO2 , data= icu )
+  cat("\nFrequency counts (test is for first level):\n")
+  print(.Table)
+  prop.test(rbind(.Table), alternative='two.sided', p=.5, conf.level=.95, 
+  correct=FALSE)
+})
+```
+P value < 0.05, reject null hypothesis and conclude the proportions of high PO2 and normal PO2 are different. 
+
+
+Ho: The proportions of previous are not different
+
+Ha: Proportions are different
+
+```{r}
+local({
+  .Table <- xtabs(~ Previous , data= icu )
+  cat("\nFrequency counts (test is for first level):\n")
+  print(.Table)
+  prop.test(rbind(.Table), alternative='two.sided', p=.5, conf.level=.95, 
+  correct=FALSE)
+})
+```
+
+P value < 0.05, reject null hypothesis and conclude the proportions of having a previous admission to the ICU in the last 6 months vs not are different. 
+
+
+Ho: The proportions of renal are not different
+
+Ha: Proportions are different
+
+```{r}
+local({
+  .Table <- xtabs(~ Renal , data= icu )
+  cat("\nFrequency counts (test is for first level):\n")
+  print(.Table)
+  prop.test(rbind(.Table), alternative='two.sided', p=.5, conf.level=.95, 
+  correct=FALSE)
+})
+```
+
+P value < 0.05, reject null hypothesis and conclude the proportions of renal are different. 
+
+Ho: The proportions of service are not different
+
+Ha: Proportions are different
+
+```{r}
+local({
+  .Table <- xtabs(~ Service , data= icu )
+  cat("\nFrequency counts (test is for first level):\n")
+  print(.Table)
+  prop.test(rbind(.Table), alternative='two.sided', p=.5, conf.level=.95, 
+  correct=FALSE)
+})
+```
+
+P value >0.05, do not reject null hypothesis and conclude the proportions of medical vs surgical service are the same. 
+
+
+Ho: The proportions of sex are not different
+
+Ha: Proportions are different
+
+```{r}
+local({
+  .Table <- xtabs(~ Sex , data= icu )
+  cat("\nFrequency counts (test is for first level):\n")
+  print(.Table)
+  prop.test(rbind(.Table), alternative='two.sided', p=.5, conf.level=.95, 
+  correct=FALSE)
+})
+```
+
+P value <0.05, reject null hypothesis and conclude the proportions of females vs males are not the same. 
+
+Ho: The proportions of status are not different
+
+Ha: Proportions are different
+
+```{r}
+local({
+  .Table <- xtabs(~ Status , data= icu )
+  cat("\nFrequency counts (test is for first level):\n")
+  print(.Table)
+  prop.test(rbind(.Table), alternative='two.sided', p=.5, conf.level=.95, 
+  correct=FALSE)
+})
+```
+
+P value <0.05, reject null hypothesis and conclude the proportions of vital signs lived vs died are not the same. 
+
+Ho: The proportions of type are not different
+
+Ha: Proportions are different
+
+```{r}
+local({
+  .Table <- xtabs(~ Type , data= icu )
+  cat("\nFrequency counts (test is for first level):\n")
+  print(.Table)
+  prop.test(rbind(.Table), alternative='two.sided', p=.5, conf.level=.95, 
+  correct=FALSE)
+})
+```
+
+P value <0.05, reject null hypothesis and conclude the proportions of elective vs emergency admission are not the same. 
+
+In conclusion, the proportions of bicarbonate, cancer, CPR, creatinine, infection, PCO2, PH, PO2, renal, sex, status, and type are not the same. However, the catagories of fracture, previous, and service have the same proportions.
+
+### Kruskal-Wallis
+
+Ho: The distribution of age is the same regardless of status
+
+Ha: The distribution of age is not the same regardless of status
+
+```{r echo=FALSE}
+with(icu, tapply(Age, Status, median, na.rm=TRUE))
+kruskal.test(Age ~ Status, data=icu)
+```
+
+P value < 0.05, reject the null hypothesis and conclide that the distribution of age is not the same regardless of status. 
+
+
+Ho: The distribution of heartrate is the same regardless of status
+
+Ha: The distribution of heartrate is not the same regardless of status
+
+```{r echo=FALSE}
+with(icu, tapply(HeartRate, Status, median, na.rm=TRUE))
+kruskal.test(HeartRate ~ Status, data=icu)
+```
+
+P value >0.05, do not reject the null hypothesis and conclude that the distribution of heart rate is the same regardless of status.
+
+
+Ho: The distribution of systolic is the same regardless of status
+
+Ha: The distribution of systolic is not the same regardless of status
+
+```{r echo=FALSE}
+with(icu, tapply(Systolic, Status, median, na.rm=TRUE))
+kruskal.test(Systolic ~ Status, data=icu)
+```
+
+P value <0.05, reject the null hypothesis and conclude that the distribution of systolic is not the same regardless of status. 
+
+
+### Chi Square
+
+
+```{r echo=FALSE}
+library(shiny)
+  selectInput("choice7", label="Choose an attribute:",
+              choices = c("Age","Sex","Race","Service","Cancer","Renal","Infection","CPR","Type","Fracture","PO2","PH","Cancer","Creatinine", "Consciousness","PC02"),
+            selected = "Age")
+    
+     choice7 <- reactive({
+  a<-Subset(columns=input$choice7,data=icu )
+  return(a)
+})
+
+
+  renderImage({
+      mydataframe<-data.frame(choice7())
+      mydataframe$Status<-icu$Status
+      sjt.xtab(mydataframe[,1], mydataframe$Status, 
+      show.col.prc=TRUE)
+
+})
+
+
+```
+
+
+
+```{r echo=FALSE}
+pacman::p_load(sjPlot)
+```
+
+Check lambda first then check chi square. 0 = no increase in ability to predict dependent. 1= 100% certain predict correctly 
+
+Ho: Lambda = 0, i.e., sex does not help to predict status, α= 0.05
+
+Ha: Lambda ≠ 0, i.e., sex does help to status 
+
+
+Ho: Lambda = 0, i.e., service does not help to predict status, α= 0.05
+
+Ha: Lambda ≠ 0, i.e., service does help to status 
+
+
+
+Ho: Lambda = 0, i.e., cancer does not help to predict status, α= 0.05
+
+Ha: Lambda ≠ 0, i.e., cancer does help to status 
+
+
+
+Ho: Lambda = 0, i.e., renal does not help to predict status, α= 0.05
+
+Ha: Lambda ≠ 0, i.e., renal does help to status 
+
+
+
+Ho: Lambda = 0, i.e., CPR does not help to predict status, α= 0.05
+
+Ha: Lambda ≠ 0, i.e., CPR does help to status 
+
+
+
+Ho: Lambda = 0, i.e., previous does not help to predict status, α= 0.05
+
+Ha: Lambda ≠ 0, i.e., previous does help to status 
+
+
+
+Ho: Lambda = 0, i.e., fracture does not help to predict status, α= 0.05
+
+Ha: Lambda ≠ 0, i.e., fracture does help to status 
+
+
+
+Ho: Lambda = 0, i.e., PO2 does not help to predict status, α= 0.05
+
+Ha: Lambda ≠ 0, i.e., PO2 does help to status 
+
+
+
+Ho: Lambda = 0, i.e., PH does not help to predict status, α= 0.05
+
+Ha: Lambda ≠ 0, i.e., PH does help to status 
+
+
+
+Ho: Lambda = 0, i.e., PC02 does not help to predict status, α= 0.05
+
+Ha: Lambda ≠ 0, i.e., PC02 does help to status 
+
+
+
+Ho: Lambda = 0, i.e., Bicarbonate does not help to predict status, α= 0.05
+
+Ha: Lambda ≠ 0, i.e., Bicarbonate does help to status 
+
+
+
+Ho: Lambda = 0, i.e., Creatinine does not help to predict status, α= 0.05
+
+Ha: Lambda ≠ 0, i.e., Creatinine does help to status 
+
+
+
+Ho: Lambda = 0, i.e., Conciousness does not help to predict status, α= 0.05
+
+Ha: Lambda ≠ 0, i.e., Conciousness does help to status
+
+THEN CHECK CHI SQUARE!
+
+Ho: No association between Status and Sex 
+
+Ha: Association
+
+In conclusion, service, renal, infection, CPR, Type, Creatinine and conciousness each have an association to Status.
+
+
+##Outliers
+
+```{r echo=FALSE}
+library(mvoutlier)
+outliers <- aq.plot(icu[c("HeartRate","Age")])
+#outliers # show list of outliers 
+```
+
+There are 20 outliers in the data Heartrate-Age
+
+```{r echo=FALSE}
+library(mvoutlier)
+outliers <- aq.plot(icu[c("HeartRate","Systolic")])
+#outliers # show list of outliers 
+```
+
+There are 8 outliers in the data heartrate-systolic.
+
+```{r echo=FALSE}
+library(mvoutlier)
+outliers <- aq.plot(icu[c("Age","Systolic")])
+#outliers # show list of outliers 
+```
+
+There are 0 outliers in the data age-systolic. 
+
+
+
 ##Predictive Model
 
 ###Individual Models{.tabset}
@@ -644,6 +1075,7 @@ tab_model(ClinicalModel2)
 ```
 
 ###Full Model
+
 ```{r echo=FALSE, message=FALSE, warning=FALSE}
 FullModel <- glm(Status ~ Age + Bicarbonate + Cancer + Consciousness + CPR + 
   Creatinine + Fracture + HeartRate + Infection + PCO2 + PH + PO2 + Previous 
@@ -672,11 +1104,57 @@ tab_model(FullModel2)
 ```
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE, results=FALSE}
-
-
-
-
+#stepwise(FullModel, direction='forward/backward', criterion='BIC')
+##doesn't get Cancer
 ```
+
+```{r, echo=FALSE, message-FALSE, warning=FALSE, eval=FALSE}
+icu <- within(icu, {FullModel2 <- fitted(FullModel2) 
+})
+```
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+set.seed(0)
+train_test_split <- initial_split(icu, prop = 0.7)
+train <- training(train_test_split)
+test <- testing(train_test_split)
+```
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+Train <- glm(Status ~  Age + Type + Consciousness, 
+  family=binomial(logit), data=train)
+ 
+tab_model(Train)
+```
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+Train <- glm(Status ~  Age + Type + Consciousness, 
+  family=binomial(logit), data=train)
+ 
+tab_model(Train)
+```
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+predicted <- predict(Train, newdata=test  ) # # 
+actual <- test$Status  # actual Intention to Return for the testing sample
+x <- as.data.frame(cbind(actual, predicted))  
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+cor.test(x$actual,x$predicted) # hypothesis test for correlation
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(data=x, aes(x=predicted, y=actual)) + 
+  geom_jitter(width=0.15) +
+  geom_smooth(method=lm)
+
+actualvpredict <- lm(actual ~ predicted, x)
+tab_model(actualvpredict)
+```
+
+
 
 
 
